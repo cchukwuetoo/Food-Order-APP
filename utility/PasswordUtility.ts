@@ -1,3 +1,4 @@
+import { Request } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { VendorPayLoad } from '../dto';
@@ -28,7 +29,9 @@ export const GenerateSignature = (payload: VendorPayLoad) => {
 export const ValidateSignature = async (req: Request) => {
     const signature = req.get('Authorization');
     if(signature){
-        const payload = await jwt.verify(signature.split(' ')[1], APP_SECRET) as AuthPayLoad
+        const payload = await jwt.verify(signature.split(' ')[1], APP_SECRET) as AuthPayLoad;
+        req.user = payload;
+        return true;
     }
 
 

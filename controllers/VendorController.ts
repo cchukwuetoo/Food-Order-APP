@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { VendorLoginInputs } from '../dto';
+import { EditVendorInput, VendorLoginInputs } from '../dto';
 import { FindVendor } from './AdminController';
 import { GenerateSignature, ValidatePassword } from '../utility';
 
@@ -26,14 +26,45 @@ export const VendorLogin = async (req: Request, res: Response, next: NextFunctio
 }
 
 export const GetVendorProfile = async (req: Request, res: Response, next: NextFunction) => {
-
+    const user = req.user;
+    if (user) {
+        const existingVendor = await FindVendor(user._id)
+        return res.json(existingVendor)
+    }
+    return res.json({"message": "Vendor information not found"})
 }
 
 
 export const UpdateVendorProfile = async (req: Request, res: Response, next: NextFunction) => {
-    
+    const { name, address, phone, foodTypes } = <EditVendorInput>req.body;
+    const user = req.user;
+    if (user) {
+        const existingVendor = await FindVendor(user._id)
+        if (existingVendor !== null) {
+            existingVendor.name = name;
+            existingVendor.address = address;
+            existingVendor.phone = phone;
+            existingVendor.foodType = foodTypes;
+
+            const savedResult = await existingVendor.save()
+            return res.json(savedResult)
+        }
+        return res.json(existingVendor)
+    }
+    return res.json({"message": "Vendor information not found"})
 }
 
 export const UpdateVendorService = async (req: Request, res: Response, next: NextFunction) => {
-    
+    const user = req.user;
+    if (user) {
+        const existingVendor = await FindVendor(user._id)
+        if (existingVendor !== null) {
+           
+             existingVendor.serviceAvailable = !existingVendor.serviceAvailable;
+             const savedResult = await existingVendor.save()
+             return res.json(savedResult)
+        }
+        return res.json(existingVendor)
+    }
+    return res.json({"message": "Vendor information not found"})
 }
