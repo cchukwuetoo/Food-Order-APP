@@ -15,7 +15,7 @@ interface VendorDoc extends Document {
     serviceAvailable: boolean;
     coverImage: [string];
     rating: number;
-    //foods: any;
+    foods: any;
 }
 
 
