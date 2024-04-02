@@ -2,7 +2,7 @@ export interface CreateFoodInputs{
     name: string;
     description: string;
     foodType: string;
-    catergory: string;
+    category: string;
     price:  number;
     readyTime: number;
     

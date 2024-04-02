@@ -1,11 +1,11 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-interface FoodDoc extends Document {
+export interface FoodDoc extends Document {
     vendorId: string;
     name: string;
     description: string;
     foodType: string;
-    catergory: string;
+    category: string;
     price:  number;
     readyTime: number;
     rating: number;
@@ -18,7 +18,7 @@ const FoodSchema = new Schema ({
     name: { type: String, required: true },
     description: { type: String, required: true },
     foodType: { type: String, required: true },
-    catergory: { type: String },
+    category: { type: String },
     price:  { type: Number, required: true },
     readyTime: { type: Number },
     rating: { type: Number },
