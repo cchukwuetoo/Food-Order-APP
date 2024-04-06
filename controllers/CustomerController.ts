@@ -1,15 +1,15 @@
 import { ValidationError, validate } from 'class-validator';
 import express, { Request, Response, NextFunction } from 'express';
 import { plainToClass } from 'class-transformer';
-import { CreatecustomerInputs } from '../dto/Customer.dto';
+import { CreateCustomerInputs, UserLoginInputs, EditCustomerProfileInputs } from '../dto/Customer.dto';
 import { Customer } from '../models/Customer';
-import { GenerateOtp, GeneratePassword, GenerateSalt, GenerateSignature, onRequestOTP } from '../utility';
+import { GenerateOtp, GeneratePassword, GenerateSalt, GenerateSignature, ValidatePassword, onRequestOTP } from '../utility';
 
 
 
 
 export const CustomerSignUp = async (req: Request, res: Response, next: NextFunction) => {
-    const customerInputs = plainToClass(CreatecustomerInputs, req.body)
+    const customerInputs = plainToClass(CreateCustomerInputs, req.body)
 
     const inputErrors = await validate(customerInputs, { validationError: { target: true } });
 
@@ -63,11 +63,47 @@ export const CustomerSignUp = async (req: Request, res: Response, next: NextFunc
         });
 
     }
-    return res.status(400).json({message: 'Error with Signup'})
+    return res.status(400).json({message: 'Login Error'})
 }
 
 export const CustomerLogin = async (req: Request, res: Response, next: NextFunction) => {
-    
+    const loginInputs = plainToClass(UserLoginInputs, req.body);
+
+    const loginErrors = await validate(loginInputs, { validationError: { target: false} })
+
+    if (loginErrors.length > 0) {
+        return res.status(400).json(loginErrors)
+    }
+
+    const { email, password } = loginInputs;
+
+    const customer = await Customer.findOne({email: email})
+
+    if (customer) {
+        const validation = await ValidatePassword(password, customer.password, customer.salt);
+
+        if (validation) {
+            //generate the signature
+            const signature = GenerateSignature({
+                _id: customer._id,
+                email: customer.email,
+                verified: customer.verified
+            })
+
+           //send the result to client
+            return res.status(201).json({
+               signature: signature,
+               verified: customer.verified,
+               email: customer.email
+           });
+
+
+        }
+    }
+
+    return res.status(400).json({message: 'Error with Signup'})
+
+
 }
 
 
@@ -106,13 +142,67 @@ export const CustomerVerify = async (req: Request, res: Response, next: NextFunc
 }
 
 export const RequestOtp = async (req: Request, res: Response, next: NextFunction) => {
-    
+    const customer = req.user;
+
+    if (customer) {
+        const profile = await Customer.findById(customer._id)
+
+        if (profile) {
+            const { otp, expiry } = GenerateOtp();
+
+
+            profile.otp = otp;
+            profile.otp_expiry = expiry;
+
+            await profile.save();
+            await onRequestOTP(otp, profile.phone);
+
+            res.status(200).json({message: 'OTP sent to your registred phone number!'})
+        }
+    }
+
+    return res.status(400).json({message: 'Error with OTP request'})
+
 }
 
 export const GetCustomerProfile = async (req: Request, res: Response, next: NextFunction) => {
+    const customer = req.user;
+
+    if (customer) {
+        const profile = await Customer.findById(customer._id)
+
+        if (profile) {
     
+            
+            return res.status(200).json(profile )
+        }
+    }
+    return res.status(400).json({message: 'Error with Fetch Profile!'})
+
 }
 
 export const EditCustomerProfile = async (req: Request, res: Response, next: NextFunction) => {
-    
+    const customer = req.user;
+    const profileInputs = plainToClass( EditCustomerProfileInputs, req.body);
+    const profileErrors = await validate(profileInputs, { validationError: { target: false}})
+
+    if (profileErrors.length > 0) {
+        return res.status(400).json(profileErrors)
+    }
+
+    const { firstName, lastName, address } = profileInputs
+
+    if (customer) {
+        const profile = await Customer.findById(customer._id)
+
+        if (profile) {
+            profile.firstName = firstName;
+            profile.lastName = lastName;
+            profile.address = address;
+
+            const result = await profile.save();
+            
+            res.status(200).json(result)
+        }
+    }
 }
