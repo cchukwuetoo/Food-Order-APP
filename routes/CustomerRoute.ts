@@ -1,5 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express';
 import { CustomerLogin, CustomerSignUp, CustomerVerify, EditCustomerProfile, GetCustomerProfile, RequestOtp } from '../controllers';
+import { Authenticate } from '../middlewares';
 
 const router = express.Router();
 
@@ -12,7 +13,7 @@ router.post('/login', CustomerLogin)
 
 
 //Authentication
-
+router.use(Authenticate)
 
 //Verify Customer's account
 router.patch('/verify', CustomerVerify)
